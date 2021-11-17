@@ -22,6 +22,7 @@ repositories {
 dependencies {
     implementation(kotlin("stdlib"))
     implementation("net.dv8tion:JDA:4.3.0_277")
+    implementation("com.google.guava:guava:31.0.1-jre")
 }
 
 tasks {
