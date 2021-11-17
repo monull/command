@@ -1,6 +1,5 @@
 package io.github.monull.command
 
-import com.google.common.collect.ImmutableList
 import io.github.monull.command.argument.CommandArgument
 import net.dv8tion.jda.api.JDA
 
@@ -10,7 +9,7 @@ abstract class Command(
     val executor: (CommandSource.(CommandContext) -> Unit)?,
     children: Collection<Command>
 ) {
-    internal val children: List<Command> = ImmutableList.copyOf(children)
+    internal val children: List<Command> = children.toList()
 
     fun getChild(arg: String): Command? {
         for (child in children) {

@@ -1,6 +1,5 @@
 package io.github.monull.command
 
-import com.google.common.collect.ImmutableMap
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
@@ -25,7 +24,7 @@ class CommandDispatcher(children: Map<String, LiteralCommandBuilder>, jda: JDA) 
             builds[command] = builder.build()
         }
 
-        this.children = ImmutableMap.copyOf(builds)
+        this.children = builds
 
         val adapter = CommandListener(children.keys.first(), this)
         jda.addEventListener(adapter)
