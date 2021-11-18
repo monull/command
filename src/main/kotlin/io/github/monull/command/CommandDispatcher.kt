@@ -1,5 +1,6 @@
 package io.github.monull.command
 
+import com.google.common.collect.ImmutableList
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
@@ -59,9 +60,9 @@ class CommandDispatcher(children: Map<String, LiteralCommandBuilder>, jda: JDA) 
     internal fun dispatch(event: MessageReceivedEvent) {
         runCatching {
             val raw = event.message.contentRaw.split(" ")
-            val command = raw[0]
-            val args = event.message.contentRaw.removePrefix("$command ").split(" ").toTypedArray()
-            val context = if (raw.size == 1) {
+            val command = if (event.message.mentionedUsers.isNotEmpty()) raw[1] else raw[0]
+            val args = if (event.message.mentionedUsers.isEmpty()) event.message.contentRaw.removePrefix("$command ").split(" ").toTypedArray() else event.message.contentRaw.removePrefix("${raw[0]} $command ").split(" ").toTypedArray()
+            val context = if (raw.size == 1 && event.message.mentionedUsers.isEmpty() || raw.size == 2 && event.message.mentionedUsers.isNotEmpty()) {
                 parse(command, args, false)
             } else {
                 parse(command, args, true)
@@ -83,7 +84,8 @@ class CommandDispatcherBuilder(private val jda: JDA) {
 
 class CommandListener(private val command: String, private val dispatcher: CommandDispatcher) : ListenerAdapter() {
     override fun onMessageReceived(event: MessageReceivedEvent) {
-        val command = event.message.contentRaw.split(" ")[0]
+        val raw = event.message.contentRaw.split(" ")
+        val command = if (event.message.mentionedUsers.isNotEmpty()) raw[1] else raw[0]
         if (this.command == command) {
             dispatcher.dispatch(event)
         }
