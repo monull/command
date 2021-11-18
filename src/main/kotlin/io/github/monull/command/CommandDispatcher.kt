@@ -1,6 +1,5 @@
 package io.github.monull.command
 
-import com.google.common.collect.ImmutableList
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
@@ -9,6 +8,10 @@ class CommandDispatcher(children: Map<String, LiteralCommandBuilder>, jda: JDA) 
 
     companion object {
         private const val unknownCommandErrorMessage = "알 수 없는 명령입니다."
+
+        private fun Command.ensure(event: MessageReceivedEvent) {
+            requirement?.let { if (!CommandSource(event).it()) throw CommandSyntaxException(unknownCommandErrorMessage) }
+        }
     }
 
     private val children: Map<String, LiteralCommand>
@@ -31,8 +34,9 @@ class CommandDispatcher(children: Map<String, LiteralCommandBuilder>, jda: JDA) 
         jda.addEventListener(adapter)
     }
 
-    private fun parse(command: String, args: Array<out String>, bool: Boolean): CommandContext {
+    private fun parse(command: String, args: Array<out String>, event: MessageReceivedEvent, bool: Boolean): CommandContext {
         return children[command]?.let { root ->
+            root.ensure(event)
             val nodes = ArrayList<Command>()
             nodes.add(root)
             var last: Command = root
@@ -43,6 +47,7 @@ class CommandDispatcher(children: Map<String, LiteralCommandBuilder>, jda: JDA) 
 
                     val arg = args[i]
                     val child = last.getChild(arg) ?: throw CommandSyntaxException(unknownCommandErrorMessage)
+                    child.ensure(event)
 
                     nodes += child
                     last = child
@@ -63,10 +68,11 @@ class CommandDispatcher(children: Map<String, LiteralCommandBuilder>, jda: JDA) 
             val command = if (event.message.mentionedUsers.isNotEmpty()) raw[1] else raw[0]
             val args = if (event.message.mentionedUsers.isEmpty()) event.message.contentRaw.removePrefix("$command ").split(" ").toTypedArray() else event.message.contentRaw.removePrefix("${raw[0]} $command ").split(" ").toTypedArray()
             val context = if (raw.size == 1 && event.message.mentionedUsers.isEmpty() || raw.size == 2 && event.message.mentionedUsers.isNotEmpty()) {
-                parse(command, args, false)
+                parse(command, args, event, false)
             } else {
-                parse(command, args, true)
+                parse(command, args, event, true)
             }
+
             context.executor.invoke(CommandSource(event), context)
         }
     }
